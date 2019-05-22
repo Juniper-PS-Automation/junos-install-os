@@ -87,3 +87,72 @@ Key | Use Description
 ```initial_wait``` | wait in seconds after the reboot of the device.  this relates to the ```verify_os``` key
 ```interval``` | wait in seconds after the ```initial_wait``` value is exceeded to try and connect to the device.  this relates to ```verify_os``` and ```retries```.
 
+### Data Conventions and Precedence
+The hierarchical setup of the host and tags allows you to merge and override the data used by the microservice.  Let's use a snippet from the yaml file above as an example:
+```
+tags:
+  - ex2300
+  - common
+```
+The rule is from bottom up, the data is more specific and has more precedence than the key below it. Order of precedence is ```ex2300``` is more specific than ```common```.  Given that rule the data in the ```ex2300.yaml``` file will overide any data in the ```common.yaml``` file.  Now factor in the ```host.yaml``` file and ```data``` key.  That file has the highest precedence and will override the data within ```tags```.
+```
+hosts.yaml
+---
+    data:
+      jumphost:
+        local_port: 10022
+      hostname: base-2300-48p-1
+      address: 192.168.101.4
+      package: "ex2300-15.1X53-D59.4.tgz"
+      os_version: 15.1X53-D59.4 #
+```
+and
+```
+ex2300.yaml
+---
+os_version: 15.1X53-D59.4 #15.1X53-D59.4 #
+package: "ex2300-15.1X53-D56.tgz"
+```
+and
+```
+common.yaml
+---
+username: juniper
+password: Password
+transport: ssh
+port: 22
+jumphost:
+  server: X.X.X.X
+  username: juniper
+  password: Password
+  port: 22
+#local:
+#  package_dir: /var/tmp
+remote:
+  hostname: X.X.X.X
+  password: Password
+  username: juniper
+  package_dir: /data/images
+```
+Our final data available to the OS install will be the following:
+```
+username: juniper
+password: Password
+transport: ssh
+port: 22
+hostname: base-2300-48p-1
+address: 192.168.101.4
+package: "ex2300-15.1X53-D59.4.tgz"
+os_version: 15.1X53-D59.4
+jumphost:
+  local_port: 10022
+    server: X.X.X.X
+    username: juniper
+    password: Password
+    port: 22
+remote:
+  hostname: X.X.X.X
+  password: Password
+  username: juniper
+  package_dir: /data/images
+```
